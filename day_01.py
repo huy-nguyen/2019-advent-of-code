@@ -1,7 +1,7 @@
 import math
 
 
-def get_simple_fuel_for_mass(mass):
+def get_simple_fuel_for_mass(mass: float) -> float:
     return math.floor(mass / 3) - 2
 
 
@@ -14,8 +14,8 @@ def part_one():
     return total
 
 
-def get_complex_fuel_for_mass(input_mass):
-    total = 0
+def get_complex_fuel_for_mass(input_mass: float) -> float:
+    total: float = 0
     mass = input_mass
     fuel = get_simple_fuel_for_mass(mass)
     while(fuel >= 0):

@@ -26,6 +26,8 @@ RUN apt-get update \
     #
     # Verify git, process tools, lsb-release (common in install instructions for CLIs) installed
     && apt-get -y install git iproute2 procps iproute2 lsb-release \
+    # Install zsh to enable oh-my-zsh
+    && apt-get -y install zsh curl\
     #
     # Install pylint
     && /opt/conda/bin/pip install pylint \
@@ -51,3 +53,5 @@ RUN apt-get update \
 ENV DEBIAN_FRONTEND=
 
 RUN pip install mypy pytest pytest-mypy
+
+RUN sh -c "$(curl -fsSL https://raw.githubusercontent.com/robbyrussell/oh-my-zsh/master/tools/install.sh)" "" --unattended \

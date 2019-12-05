@@ -1,28 +1,28 @@
-from day_03 import manhattan_distance, Line, get_intersection_between_lines, parse_into_path, get_intersection_closest_to_origin, part_one, get_distance_from_path_start, get_shortest_total_distance_along_paths, part_two
+from day_03 import manhattan_distance, Line, get_intersection_between_lines, parse_into_path, get_intersection_closest_to_origin, part_one, get_distance_from_path_start, get_shortest_total_distance_along_paths, part_two, Point
 from collections import Counter
 
 
 def test_manhattan_distance():
-    assert manhattan_distance((0, 0), (0, 0)) == 0
-    assert manhattan_distance((1, 2), (4, 5)) == 6
+    assert manhattan_distance(Point(0, 0), Point(0, 0)) == 0
+    assert manhattan_distance(Point(1, 2), Point(4, 5)) == 6
 
 
 def test_line():
-    assert Line((1, 2), (4, 5)).length() == 6
+    assert Line(Point(1, 2), Point(4, 5)).length() == 6
 
 
 def test_line_intersection():
     assert get_intersection_between_lines(
-        Line((1, 1), (1, 4)),
-        Line((2, 2), (2, 5))
+        Line(Point(1, 1), Point(1, 4)),
+        Line(Point(2, 2), Point(2, 5))
     ) == None
     assert get_intersection_between_lines(
-        Line((1, 1), (1, 4)),
-        Line((0, 2), (3, 2))
+        Line(Point(1, 1), Point(1, 4)),
+        Line(Point(0, 2), Point(3, 2))
     ) == (1, 2)
     assert get_intersection_between_lines(
-        Line((1, 1), (4, 1)),
-        Line((1, 4), (1, 1))
+        Line(Point(1, 1), Point(4, 1)),
+        Line(Point(1, 4), Point(1, 1))
     ) == (1, 1)
 
 
@@ -47,19 +47,19 @@ def test_part_one():
 
 def test_get_distance_from_path_start():
     assert get_distance_from_path_start(
-        (3, 3),
+        Point(3, 3),
         parse_into_path('R8,U5,L5,D3')
     ) == 20
     assert get_distance_from_path_start(
-        (3, 3),
+        Point(3, 3),
         parse_into_path('U7,R6,D4,L4')
     ) == 20
     assert get_distance_from_path_start(
-        (6, 5),
+        Point(6, 5),
         parse_into_path('R8,U5,L5,D3')
     ) == 15
     assert get_distance_from_path_start(
-        (6, 5),
+        Point(6, 5),
         parse_into_path('U7,R6,D4,L4')
     ) == 15
 

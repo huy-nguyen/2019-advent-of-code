@@ -64,6 +64,8 @@ def part_one():
         data = parse_input_into_hash_table(without_new_line_chars)
         return count_orbits(data)
 
+def test_part_one():
+    assert part_one() == 234446
 
 def parse_input_into_hash_table(raw_input: List[str]) -> Dict[str, str]:
     result = {}

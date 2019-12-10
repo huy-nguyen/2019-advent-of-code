@@ -2,6 +2,8 @@ from collections import namedtuple
 from typing import Tuple, List, Dict
 from enum import Enum, unique, auto
 import re
+from unittest.mock import Mock, call, AsyncMock
+import pytest
 
 
 @unique
@@ -93,8 +95,28 @@ def read_value_from_buffer(buffer: List[int], operand: int, mode: Mode) -> int:
         raise RuntimeError('Invalid mode ' + str(mode))
 
 
-def execute_program(raw_input: str):
-    buffer = [int(x) for x in raw_input.split(',')]
+def get_input_generator(prompt: str):
+    while(True):
+        value = input(prompt)
+        yield value
+
+def async_builtin_input(prompt: str):
+    return input(prompt)
+
+
+@unique
+class MessageType(Enum):
+    GET_INPUT = auto()
+    PRINT_OUTPUT = auto()
+    TERMINATE = auto()
+
+ProgramMessage = namedtuple("ProgramMessage", ["type", "arg"])
+
+def compile_source_code(source_code: str):
+    """Last two arguments are used for mocking in tests and also for use in day 7.
+    get_user_input is an awaitable.
+    """
+    buffer = [int(x) for x in source_code.split(',')]
     index = 0
     should_continue = True
     while(should_continue):
@@ -119,20 +141,21 @@ def execute_program(raw_input: str):
             index += num_operands + 1
         elif op_code == Op_Code.INPUT:
             operand = buffer[index + 1]
-            result = int(input('Enter a value: '))
+            input_from_user = yield ProgramMessage(type=MessageType.GET_INPUT, arg="Enter a number: ")
+            result = int(input_from_user)
             buffer[operand] = result
             index += num_operands + 1
         elif op_code == Op_Code.OUTPUT:
             operand = read_value_from_buffer(
                 buffer, buffer[index + 1], modes[0])
             index += num_operands + 1
-            print(operand)
+            yield ProgramMessage(type=MessageType.PRINT_OUTPUT, arg=operand)
         elif op_code == Op_Code.JUMP_IF_TRUE:
             operand_1 = read_value_from_buffer(
                 buffer, buffer[index + 1], modes[0])
             operand_2 = read_value_from_buffer(
                 buffer, buffer[index + 2], modes[1])
-            if operand_1 is not 0:
+            if operand_1 != 0:
                 index = operand_2
             else:
                 index += num_operands + 1
@@ -141,7 +164,7 @@ def execute_program(raw_input: str):
                 buffer, buffer[index + 1], modes[0])
             operand_2 = read_value_from_buffer(
                 buffer, buffer[index + 2], modes[1])
-            if operand_1 is 0:
+            if operand_1 == 0:
                 index = operand_2
             else:
                 index += num_operands + 1
@@ -170,170 +193,115 @@ def execute_program(raw_input: str):
         elif op_code == Op_Code.TERMINATE:
             should_continue = False
             index += num_operands + 1
-            break
-    return buffer
+            yield ProgramMessage(type=MessageType.TERMINATE, arg=buffer)
 
+def run_with_input_output(source_code, get_user_input, print_output):
+    program = compile_source_code(source_code)
+    should_continue = True
+    final_output = None
+    try:
+        message = next(program)
+        while should_continue:
+            if message.type == MessageType.GET_INPUT:
+                user_input = get_user_input(message.arg)
+                message = program.send(user_input)
+            elif message.type  == MessageType.PRINT_OUTPUT:
+                print_output(message.arg)
+                message = next(program)
+            elif message.type == MessageType.TERMINATE:
+                final_output = message.arg
+                should_continue = False
+                break
+    except StopIteration:
+        pass
+    return final_output
 
-def test_simple_programs():
-    # Tests from day 2:
-    assert execute_program('1,9,10,3,2,3,11,0,99,30,40,50') == [
-        3500, 9, 10, 70, 2, 3, 11, 0, 99, 30, 40, 50]
-    assert execute_program('1,0,0,0,99') == [2, 0, 0, 0, 99]
-    assert execute_program('2,3,0,3,99') == [2, 3, 0, 6, 99]
-    assert execute_program('2,4,4,5,99,0') == [
-        2, 4, 4, 5, 99, 9801]
-    assert execute_program('1,1,1,4,99,5,6,0,99') == [
-        30, 1, 1, 4, 2, 5, 6, 0, 99]
-    # Tests from day 5 part 1:
-    assert execute_program('1002,4,3,4,33') == [1002, 4, 3, 4, 99]
-    assert execute_program('1101,100,-1,4,0') == [1101, 100, -1, 4, 99]
-
-
-def execute_day_05_input():
-    with open('day_05_input.txt') as f:
-        raw_input = f.readline()
-        execute_program(raw_input)
-
-
-def test_part_one(monkeypatch, capfd):
-    monkeypatch.setattr('builtins.input', lambda _: "1")
-    execute_day_05_input()
-    out, _ = capfd.readouterr()
-    assert re.match(r'(0\n)+4601506', out) is not None
-
-
-def test_part_two(monkeypatch, capfd):
-    monkeypatch.setattr('builtins.input', lambda _: "5")
-    execute_day_05_input()
-    out, _ = capfd.readouterr()
-    assert re.match(r'5525561', out) is not None
+@pytest.mark.parametrize(
+    "source_code,expected",
+    [
+        # Tests from day 2:
+        ('1,9,10,3,2,3,11,0,99,30,40,50', [
+         3500, 9, 10, 70, 2, 3, 11, 0, 99, 30, 40, 50]),
+        ('1,0,0,0,99', [2, 0, 0, 0, 99]),
+        ('2,3,0,3,99', [2, 3, 0, 6, 99]),
+        ('2,4,4,5,99,0', [
+            2, 4, 4, 5, 99, 9801]),
+        ('1,1,1,4,99,5,6,0,99', [
+            30, 1, 1, 4, 2, 5, 6, 0, 99]),
+        # Tests from day 5 part 1:
+        ('1002,4,3,4,33', [1002, 4, 3, 4, 99]),
+        ('1101,100,-1,4,0', [1101, 100, -1, 4, 99]),
+    ]
+)
+def test_simple_program(source_code, expected):
+    assert run_with_input_output(source_code, input, print) == expected
 
 
 equal_op_code_position_mode_program = '3,9,8,9,10,9,4,9,99,-1,8'
-
-
-def test_equal_op_code_true_position(monkeypatch, capfd):
-    monkeypatch.setattr('builtins.input', lambda _: "8")
-    execute_program(equal_op_code_position_mode_program)
-    out, _ = capfd.readouterr()
-    assert re.match(r'\s*1\s*', out)
-
-
-def test_equal_op_code_false_position(monkeypatch, capfd):
-    monkeypatch.setattr('builtins.input', lambda _: "13")
-    execute_program(equal_op_code_position_mode_program)
-    out, _ = capfd.readouterr()
-    assert re.match(r'\s*0\s*', out)
-
-
 less_than_op_code_position_mode_program = '3,9,7,9,10,9,4,9,99,-1,8'
-
-
-def test_less_than_op_code_true_position(monkeypatch, capfd):
-    monkeypatch.setattr('builtins.input', lambda _: "5")
-    execute_program(less_than_op_code_position_mode_program)
-    out, _ = capfd.readouterr()
-    assert re.match(r'\s*1\s*', out)
-
-
-def test_less_than_op_code_false_position(monkeypatch, capfd):
-    monkeypatch.setattr('builtins.input', lambda _: "13")
-    execute_program(less_than_op_code_position_mode_program)
-    out, _ = capfd.readouterr()
-    assert re.match(r'\s*0\s*', out)
-
-
 equal_op_code_immediate_mode_program = '3,3,1108,-1,8,3,4,3,99'
-
-
-def test_equal_op_code_true_immediate(monkeypatch, capfd):
-    monkeypatch.setattr('builtins.input', lambda _: "8")
-    execute_program(equal_op_code_immediate_mode_program)
-    out, _ = capfd.readouterr()
-    assert re.match(r'\s*1\s*', out)
-
-
-def test_equal_op_code_false_immediate(monkeypatch, capfd):
-    monkeypatch.setattr('builtins.input', lambda _: "13")
-    execute_program(equal_op_code_immediate_mode_program)
-    out, _ = capfd.readouterr()
-    assert re.match(r'\s*0\s*', out)
-
-
 less_than_op_code_immediate_mode_program = '3,3,1107,-1,8,3,4,3,99'
-
-
-def test_less_than_op_code_true_immediate(monkeypatch, capfd):
-    monkeypatch.setattr('builtins.input', lambda _: "5")
-    execute_program(less_than_op_code_immediate_mode_program)
-    out, _ = capfd.readouterr()
-    assert re.match(r'\s*1\s*', out)
-
-
-def test_less_than_op_code_false_immediate(monkeypatch, capfd):
-    monkeypatch.setattr('builtins.input', lambda _: "13")
-    execute_program(less_than_op_code_immediate_mode_program)
-    out, _ = capfd.readouterr()
-    assert re.match(r'\s*0\s*', out)
-
-
 jump_op_code_position_mode_program = '3,12,6,12,15,1,13,14,13,4,13,99,-1,0,1,9'
-
-
-def test_jump_op_code_zero_input_position(monkeypatch, capfd):
-    monkeypatch.setattr('builtins.input', lambda _: "0")
-    execute_program(jump_op_code_position_mode_program)
-    out, _ = capfd.readouterr()
-    assert re.match(r'\s*0\s*', out)
-
-
-def test_jump_op_code_non_zero_input_position(monkeypatch, capfd):
-    monkeypatch.setattr('builtins.input', lambda _: "100")
-    execute_program(jump_op_code_position_mode_program)
-    out, _ = capfd.readouterr()
-    assert re.match(r'\s*1\s*', out)
-
-
 jump_op_code_immediate_mode_program = '3,3,1105,-1,9,1101,0,0,12,4,12,99,1'
-
-
-def test_jump_op_code_zero_input_immediate(monkeypatch, capfd):
-    monkeypatch.setattr('builtins.input', lambda _: "0")
-    execute_program(jump_op_code_immediate_mode_program)
-    out, _ = capfd.readouterr()
-    assert re.match(r'\s*0\s*', out)
-
-
-def test_jump_op_code_non_zero_input_immediate(monkeypatch, capfd):
-    monkeypatch.setattr('builtins.input', lambda _: "100")
-    execute_program(jump_op_code_immediate_mode_program)
-    out, _ = capfd.readouterr()
-    assert re.match(r'\s*1\s*', out)
-
-
 large_program = '3,21,1008,21,8,20,1005,20,22,107,8,21,20,1006,20,31,1106,0,36,98,0,0,1002,21,125,20,4,20,1105,1,46,104,999,1105,1,46,1101,1000,1,20,4,20,1105,1,46,98,99'
 
 
-def test_large_program_below_8(monkeypatch, capfd):
-    monkeypatch.setattr('builtins.input', lambda _: "7")
-    execute_program(large_program)
-    out, _ = capfd.readouterr()
-    assert re.match(r'\s*999\s*', out)
+@pytest.mark.parametrize(
+    "user_input_value,source_code,expected_output",
+    [
+        ("8", equal_op_code_position_mode_program, 1),
+        ("13", equal_op_code_position_mode_program, 0),
+        ("5", less_than_op_code_position_mode_program, 1),
+        ("13", less_than_op_code_position_mode_program, 0),
+        ("8", equal_op_code_immediate_mode_program, 1),
+        ("13", equal_op_code_immediate_mode_program, 0),
+        ("5", less_than_op_code_immediate_mode_program, 1),
+        ("13", less_than_op_code_immediate_mode_program, 0),
+        ("0", jump_op_code_position_mode_program, 0),
+        ("100", jump_op_code_position_mode_program, 1),
+        ("0", jump_op_code_immediate_mode_program, 0),
+        ("100", jump_op_code_immediate_mode_program, 1),
+        ("7", large_program, 999),
+        ("8", large_program, 1000),
+        ("9", large_program, 1001),
+    ]
+)
+def test_programs_with_input_output(user_input_value, source_code, expected_output):
+    get_user_input = Mock(return_value=user_input_value)
+    print_output = Mock()
+    run_with_input_output(source_code, get_user_input, print_output)
+    print_output.assert_called_once_with(expected_output)
+
+def execute_day_05_input(get_user_input=input, print_output=print):
+    with open('day_05_input.txt') as f:
+        source_code = f.readline()
+        run_with_input_output(source_code, get_user_input, print_output)
 
 
-def test_large_program_exactly_8(monkeypatch, capfd):
-    monkeypatch.setattr('builtins.input', lambda _: "8")
-    execute_program(large_program)
-    out, _ = capfd.readouterr()
-    assert re.match(r'\s*1000\s*', out)
+def test_part_one():
+    get_user_input = Mock(return_value="1")
+    print_output = Mock()
+    execute_day_05_input(get_user_input, print_output)
+    assert print_output.call_args_list == [
+        call(0),
+        call(0),
+        call(0),
+        call(0),
+        call(0),
+        call(0),
+        call(0),
+        call(0),
+        call(0),
+        call(4601506),
+    ]
 
 
-def test_large_program_above_8(monkeypatch, capfd):
-    monkeypatch.setattr('builtins.input', lambda _: "9")
-    execute_program(large_program)
-    out, _ = capfd.readouterr()
-    assert re.match(r'\s*1001\s*', out)
+def test_part_two():
+    get_user_input = Mock(return_value="5")
+    print_output = Mock()
+    execute_day_05_input(get_user_input, print_output)
+    print_output.assert_called_once_with(5525561)
 
 
 if __name__ == "__main__":
-    execute_day_05_input()
+    pass

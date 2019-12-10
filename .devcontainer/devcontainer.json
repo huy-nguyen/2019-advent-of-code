@@ -1,7 +1,7 @@
 // For format details, see https://aka.ms/vscode-remote/devcontainer.json or the definition README at
 // https://github.com/microsoft/vscode-dev-containers/tree/master/containers/python-3-miniconda
 {
-	"name": "Python 3 - Miniconda",
+	"name": "Python 3",
 	"context": "..",
 	"dockerFile": "Dockerfile",
 
@@ -9,11 +9,11 @@
 	// You can edit these settings after create using File > Preferences > Settings > Remote.
 	"settings": {
 		"terminal.integrated.shell.linux": "/usr/bin/zsh",
-		"python.pythonPath": "/opt/conda/bin/python",
+		"python.pythonPath": "/usr/local/bin/python",
 		"python.linting.enabled": true,
 		"python.linting.pylintEnabled": true,
 		"python.linting.mypyEnabled": true,
-		"python.linting.pylintPath": "/opt/conda/bin/pylint",
+		"python.linting.pylintPath": "/usr/local/bin/pylint",
 		"python.testing.pytestArgs": [
 			"."
 		],
@@ -26,7 +26,7 @@
 	// "appPort": [],
 
 	// Uncomment the next line to run commands after the container is created.
-	"postCreateCommand": "source /opt/conda/bin/activate; conda activate base; conda install --name base autopep8;",
+	// "postCreateCommand": "source /opt/conda/bin/activate; conda activate base; conda install --name base autopep8;",
 
 	// Uncomment the next line to use a non-root user. On Linux, this will prevent
 	// new files getting created as root, but you may need to update the USER_UID

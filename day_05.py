@@ -16,6 +16,7 @@ class Op_Code(Enum):
     JUMP_IF_FALSE = auto()
     LESS_THAN = auto()
     EQUALS = auto()
+    ADJUST_RELATIVE_BASE = auto(),
     TERMINATE = auto()
 
 
@@ -23,6 +24,7 @@ class Op_Code(Enum):
 class Mode(Enum):
     POSITION = auto()
     IMMEDIATE = auto()
+    RELATIVE = auto()
 
 
 def str_to_list_digits(input_value: str) -> List[int]:
@@ -44,12 +46,14 @@ int_to_op_code_and_num_operands: Dict[int, Tuple[Op_Code, int]] = {
     6: (Op_Code.JUMP_IF_FALSE, 2),
     7: (Op_Code.LESS_THAN, 3),
     8: (Op_Code.EQUALS, 3),
+    9: (Op_Code.ADJUST_RELATIVE_BASE, 1),
     99: (Op_Code.TERMINATE, 0),
 }
 
 int_to_mode: Dict[int, Mode] = {
     0: Mode.POSITION,
-    1: Mode.IMMEDIATE
+    1: Mode.IMMEDIATE,
+    2: Mode.RELATIVE
 }
 Instruction: Tuple[Op_Code, int, List[Mode]] = namedtuple(
     "Instructions", ['op_code', 'num_operands', 'modes'])
@@ -82,13 +86,61 @@ def parse_instruction(input_value: int) -> Instruction:
 def test_parse_instruction():
     assert parse_instruction(2) == Instruction(Op_Code.MULTIPLY, 3, [
         Mode.POSITION, Mode.POSITION, Mode.POSITION])
+    assert parse_instruction(109) == Instruction(Op_Code.ADJUST_RELATIVE_BASE, 1, [
+        Mode.IMMEDIATE])
     assert parse_instruction(1002) == Instruction(Op_Code.MULTIPLY, 3, [
         Mode.POSITION, Mode.IMMEDIATE, Mode.POSITION])
 
 
-def read_value_from_buffer(buffer: List[int], operand: int, mode: Mode) -> int:
+class Buffer:
+    """Like a list but also dynamically create missing elements on demand and assign these elements the value of zero."""
+
+    def __init__(self, initial_values: List[int]):
+        self.__buffer = {index: value for index,
+                         value in enumerate(initial_values)}
+
+    def __retrieve(self, key):
+        return self.__buffer[key]
+
+    def __getitem__(self, key):
+        default_value = 0
+        if isinstance(key, int):
+            if key in self.__buffer:
+                return self.__buffer[key]
+            else:
+                self.__buffer[key] = default_value
+                return default_value
+        else:
+            raise TypeError(f"Key {key} is not an integer.")
+
+    def __setitem__(self, key, value):
+        if isinstance(key, int):
+            self.__buffer[key] = value
+        else:
+            raise TypeError(f"Key {key} is not an integer.")
+
+    def __len__(self):
+        return max(self.__buffer.keys())
+
+    def __eq__(self, other):
+        if isinstance(other, list):
+            for index, other_value in enumerate(other):
+                if index in self.__buffer:
+                    if self.__retrieve(index) != other_value:
+                        return False
+                else:
+                    return False
+            else:
+                return True
+        elif isinstance(other, Buffer):
+            return self.__buffer == other.__buffer
+
+
+def read_value_from_buffer(buffer: Buffer, operand: int, mode: Mode, relative_base: int) -> int:
     if mode == Mode.POSITION:
         return buffer[operand]
+    elif mode == Mode.RELATIVE:
+        return buffer[operand + relative_base]
     elif mode == Mode.IMMEDIATE:
         return operand
     else:
@@ -100,6 +152,7 @@ def get_input_generator(prompt: str):
         value = input(prompt)
         yield value
 
+
 def async_builtin_input(prompt: str):
     return input(prompt)
 
@@ -110,70 +163,81 @@ class MessageType(Enum):
     PRINT_OUTPUT = auto()
     TERMINATE = auto()
 
+
 ProgramMessage = namedtuple("ProgramMessage", ["type", "arg"])
+
+
+def shift_if_in_relative_mode(value: int, relative_base: int, mode: Mode) -> int:
+    return value + relative_base if mode == Mode.RELATIVE else value
+
 
 def compile_source_code(source_code: str):
     """Last two arguments are used for mocking in tests and also for use in day 7.
     get_user_input is an awaitable.
     """
-    buffer = [int(x) for x in source_code.split(',')]
+    buffer = Buffer([int(x) for x in source_code.split(',')])
     index = 0
     should_continue = True
+    relative_base = 0
     while(should_continue):
         op_code, num_operands, modes = parse_instruction(buffer[index])
         if op_code == Op_Code.ADD:
             operand_1 = read_value_from_buffer(
-                buffer, buffer[index + 1], modes[0])
+                buffer, buffer[index + 1], modes[0], relative_base)
             operand_2 = read_value_from_buffer(
-                buffer, buffer[index + 2], modes[1])
-            operand_3 = buffer[index + 3]
+                buffer, buffer[index + 2], modes[1], relative_base)
+            operand_3 = shift_if_in_relative_mode(
+                buffer[index + 3], relative_base, modes[2])
             result = operand_1 + operand_2
             buffer[operand_3] = result
             index += num_operands + 1
         elif op_code == Op_Code.MULTIPLY:
             operand_1 = read_value_from_buffer(
-                buffer, buffer[index + 1], modes[0])
+                buffer, buffer[index + 1], modes[0], relative_base)
             operand_2 = read_value_from_buffer(
-                buffer, buffer[index + 2], modes[1])
-            operand_3 = buffer[index + 3]
+                buffer, buffer[index + 2], modes[1], relative_base)
+            operand_3 = shift_if_in_relative_mode(
+                buffer[index + 3], relative_base, modes[2])
             result = operand_1 * operand_2
             buffer[operand_3] = result
             index += num_operands + 1
         elif op_code == Op_Code.INPUT:
-            operand = buffer[index + 1]
+            operand = shift_if_in_relative_mode(
+                buffer[index + 1], relative_base, modes[0])
             input_from_user = yield ProgramMessage(type=MessageType.GET_INPUT, arg="Enter a number: ")
             result = int(input_from_user)
             buffer[operand] = result
             index += num_operands + 1
         elif op_code == Op_Code.OUTPUT:
             operand = read_value_from_buffer(
-                buffer, buffer[index + 1], modes[0])
+                buffer, buffer[index + 1], modes[0], relative_base)
             index += num_operands + 1
             yield ProgramMessage(type=MessageType.PRINT_OUTPUT, arg=operand)
         elif op_code == Op_Code.JUMP_IF_TRUE:
             operand_1 = read_value_from_buffer(
-                buffer, buffer[index + 1], modes[0])
+                buffer, buffer[index + 1], modes[0], relative_base)
             operand_2 = read_value_from_buffer(
-                buffer, buffer[index + 2], modes[1])
+                buffer, buffer[index + 2], modes[1], relative_base)
             if operand_1 != 0:
                 index = operand_2
             else:
                 index += num_operands + 1
         elif op_code == Op_Code.JUMP_IF_FALSE:
             operand_1 = read_value_from_buffer(
-                buffer, buffer[index + 1], modes[0])
+                buffer, buffer[index + 1], modes[0], relative_base)
             operand_2 = read_value_from_buffer(
-                buffer, buffer[index + 2], modes[1])
+                buffer, buffer[index + 2], modes[1], relative_base)
             if operand_1 == 0:
                 index = operand_2
             else:
                 index += num_operands + 1
         elif op_code == Op_Code.LESS_THAN:
             operand_1 = read_value_from_buffer(
-                buffer, buffer[index + 1], modes[0])
+                buffer, buffer[index + 1], modes[0], relative_base)
             operand_2 = read_value_from_buffer(
-                buffer, buffer[index + 2], modes[1])
-            operand_3 = buffer[index + 3]
+                buffer, buffer[index + 2], modes[1], relative_base)
+            operand_3 = shift_if_in_relative_mode(
+                buffer[index + 3], relative_base, modes[2])
             if operand_1 < operand_2:
                 buffer[operand_3] = 1
             else:
@@ -181,19 +245,26 @@ def compile_source_code(source_code: str):
             index += num_operands + 1
         elif op_code == Op_Code.EQUALS:
             operand_1 = read_value_from_buffer(
-                buffer, buffer[index + 1], modes[0])
+                buffer, buffer[index + 1], modes[0], relative_base)
             operand_2 = read_value_from_buffer(
-                buffer, buffer[index + 2], modes[1])
-            operand_3 = buffer[index + 3]
+                buffer, buffer[index + 2], modes[1], relative_base)
+            operand_3 = shift_if_in_relative_mode(
+                buffer[index + 3], relative_base, modes[2])
             if operand_1 == operand_2:
                 buffer[operand_3] = 1
             else:
                 buffer[operand_3] = 0
             index += num_operands + 1
+        elif op_code == Op_Code.ADJUST_RELATIVE_BASE:
+            operand = read_value_from_buffer(
+                buffer, buffer[index + 1], modes[0], relative_base)
+            relative_base += operand
+            index += num_operands + 1
         elif op_code == Op_Code.TERMINATE:
             should_continue = False
             index += num_operands + 1
             yield ProgramMessage(type=MessageType.TERMINATE, arg=buffer)
+
 
 def run_with_input_output(source_code, get_user_input, print_output):
     program = compile_source_code(source_code)
@@ -205,7 +276,7 @@ def run_with_input_output(source_code, get_user_input, print_output):
             if message.type == MessageType.GET_INPUT:
                 user_input = get_user_input(message.arg)
                 message = program.send(user_input)
-            elif message.type  == MessageType.PRINT_OUTPUT:
+            elif message.type == MessageType.PRINT_OUTPUT:
                 print_output(message.arg)
                 message = next(program)
             elif message.type == MessageType.TERMINATE:
@@ -215,6 +286,7 @@ def run_with_input_output(source_code, get_user_input, print_output):
     except StopIteration:
         pass
     return final_output
+
 
 @pytest.mark.parametrize(
     "source_code,expected",
@@ -249,6 +321,7 @@ large_program = '3,21,1008,21,8,20,1005,20,22,107,8,21,20,1006,20,31,1106,0,36,9
 @pytest.mark.parametrize(
     "user_input_value,source_code,expected_output",
     [
+        # From day 7:
         ("8", equal_op_code_position_mode_program, 1),
         ("13", equal_op_code_position_mode_program, 0),
         ("5", less_than_op_code_position_mode_program, 1),
@@ -271,6 +344,7 @@ def test_programs_with_input_output(user_input_value, source_code, expected_outp
     print_output = Mock()
     run_with_input_output(source_code, get_user_input, print_output)
     print_output.assert_called_once_with(expected_output)
+
 
 def execute_day_05_input(get_user_input=input, print_output=print):
     with open('day_05_input.txt') as f:

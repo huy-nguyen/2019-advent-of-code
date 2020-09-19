@@ -1,41 +1,52 @@
-// For format details, see https://aka.ms/vscode-remote/devcontainer.json or the definition README at
-// https://github.com/microsoft/vscode-dev-containers/tree/master/containers/python-3-miniconda
 {
 	"name": "Python 3",
-	"context": "..",
-	"dockerFile": "Dockerfile",
+	"build": {
+		"dockerfile": "Dockerfile",
+		"context": "..",
+		"args": {
+			// Update 'VARIANT' to pick a Python version: 3, 3.6, 3.7, 3.8
+			"VARIANT": "3.8",
+			// Options
+			"INSTALL_NODE": "false",
+			"NODE_VERSION": "lts/*"
 
-	// Use 'settings' to set *default* container specific settings.json values on container create.
-	// You can edit these settings after create using File > Preferences > Settings > Remote.
+		}
+	},
+
+	// Set *default* container specific settings.json values on container create.
 	"settings": {
 		"terminal.integrated.shell.linux": "/usr/bin/zsh",
 		"python.pythonPath": "/usr/local/bin/python",
 		"python.linting.enabled": true,
 		"python.linting.pylintEnabled": true,
-		"python.linting.mypyEnabled": true,
-		"python.linting.pylintPath": "/usr/local/bin/pylint",
-		"python.testing.pytestArgs": [
-			"."
-		],
-		"python.testing.unittestEnabled": false,
-		"python.testing.nosetestsEnabled": false,
-		"python.testing.pytestEnabled": true
+		"python.formatting.autopep8Path": "/usr/local/py-utils/bin/autopep8",
+		"python.formatting.blackPath": "/usr/local/py-utils/bin/black",
+		"python.formatting.yapfPath": "/usr/local/py-utils/bin/yapf",
+		"python.formatting.provider": "black",
+		"python.linting.banditPath": "/usr/local/py-utils/bin/bandit",
+		"python.linting.flake8Path": "/usr/local/py-utils/bin/flake8",
+		"python.linting.mypyPath": "/usr/local/py-utils/bin/mypy",
+		"python.linting.pycodestylePath": "/usr/local/py-utils/bin/pycodestyle",
+		"python.linting.pydocstylePath": "/usr/local/py-utils/bin/pydocstyle",
+		"python.linting.pylintPath": "/usr/local/py-utils/bin/pylint",
+		"python.testing.pytestEnabled": true,
+		"python.testing.pytestPath": "/usr/local/bin/pytest",
+		"python.testing.pytestArgs": ["."],
+		"python.testing.autoTestDiscoverOnSaveEnabled": true,
 	},
 
-	// Uncomment the next line if you want to publish any ports.
-	// "appPort": [],
-
-	// Uncomment the next line to run commands after the container is created.
-	// "postCreateCommand": "source /opt/conda/bin/activate; conda activate base; conda install --name base autopep8;",
-
-	// Uncomment the next line to use a non-root user. On Linux, this will prevent
-	// new files getting created as root, but you may need to update the USER_UID
-	// and USER_GID in .devcontainer/Dockerfile to match your user if not 1000.
-	// "runArgs": [ "-u", "vscode" ],
-
-	// Add the IDs of extensions you want installed when the container is created in the array below.
+	// Add the IDs of extensions you want installed when the container is created.
 	"extensions": [
 		"ms-python.python",
-		"patbenatar.advanced-new-file"
-	]
+		"patbenatar.advanced-new-file",
+	],
+
+	// Use 'forwardPorts' to make a list of ports inside the container available locally.
+	// "forwardPorts": [],
+
+	// Use 'postCreateCommand' to run commands after the container is created.
+	// "postCreateCommand": "pip3 install --user -r requirements.txt",
+
+	// Uncomment to connect as a non-root user. See https://aka.ms/vscode-remote/containers/non-root.
+	"remoteUser": "vscode"
 }

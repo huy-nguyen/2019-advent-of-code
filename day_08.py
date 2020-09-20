@@ -22,13 +22,13 @@ test_image_2 = "0222112222120000"
 def test_read_into_layers():
     assert read_into_layers(test_image_1, 3, 2) == [
         [1, 2, 3, 4, 5, 6],
-        [7, 8, 9, 0, 1, 2]
+        [7, 8, 9, 0, 1, 2],
     ]
     assert read_into_layers(test_image_2, 2, 2) == [
         [0, 2, 2, 2],
         [1, 1, 2, 2],
         [2, 2, 1, 2],
-        [0, 0, 0, 0]
+        [0, 0, 0, 0],
     ]
 
 
@@ -49,7 +49,7 @@ def test_get_min_zero_layer():
 
 
 def part_one():
-    with open('day_08_input.txt') as f:
+    with open("day_08_input.txt") as f:
         raw_input = f.readline().strip()
         min_num_zero_digits_layer = get_min_zero_layer(raw_input, 25, 6)
         print(min_num_zero_digits_layer)
@@ -58,18 +58,13 @@ def part_one():
         return num_1_digits * num_2_digits
 
 
-def test_part_one():
-    assert part_one() == 1935
-
-
 def composite_pixels(pixels: List[int]) -> int:
     transparent_pixel_value = 2
     has_seen_first_non_transparent_pixel = False
     last_pixel = None
     for pixel in pixels:
         if last_pixel is None:
-            has_seen_first_non_transparent_pixel = (
-                pixel != transparent_pixel_value)
+            has_seen_first_non_transparent_pixel = pixel != transparent_pixel_value
         elif last_pixel == transparent_pixel_value and pixel != transparent_pixel_value:
             has_seen_first_non_transparent_pixel = True
         if has_seen_first_non_transparent_pixel:
@@ -87,8 +82,8 @@ def composite_pixels(pixels: List[int]) -> int:
         ([2, 1, 2], 1),
         ([2, 2, 0, 1], 0),
         ([2, 2, 2, 2], 2),
-        ([1, 0, 0, 0], 1)
-    ]
+        ([1, 0, 0, 0], 1),
+    ],
 )
 def test_composite_pixels(pixels, expected):
     assert composite_pixels(pixels) == expected
@@ -103,8 +98,7 @@ def composite_image(layers: List[List[int]]) -> List[int]:
 
 
 def test_composite_image():
-    assert composite_image(read_into_layers(
-        test_image_2, 2, 2)) == [0, 1, 1, 0]
+    assert composite_image(read_into_layers(test_image_2, 2, 2)) == [0, 1, 1, 0]
 
 
 def get_graphical_representation(image_pixels: List[int], width: int, height: int):
@@ -126,17 +120,17 @@ def test_get_graphical_reprentation():
 def composite_and_display(raw_input: str, width: int, height: int):
     layers = read_into_layers(raw_input, width, height)
     composited = composite_image(layers)
-    graphical_representation = get_graphical_representation(
-        composited, width, height)
+    graphical_representation = get_graphical_representation(composited, width, height)
     for row in graphical_representation:
         print(row)
 
 
-def part_two():
-    with open('day_08_input.txt') as f:
-        raw_input = f.readline().strip()
-        composite_and_display(raw_input, 25, 6)
-
-
-if __name__ == "__main__":
-    part_two()
+# Note: These tests are commented out because the input and expected output are
+# different for each Advent of Code participant. The tests as written below
+# pass given my input and the correct output (as judged by the AoC website).
+# def test_part_one():
+#     assert part_one() == 1935
+# def part_two():
+#     with open("day_08_input.txt") as f:
+#         raw_input = f.readline().strip()
+#         composite_and_display(raw_input, 25, 6)

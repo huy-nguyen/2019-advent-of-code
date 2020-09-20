@@ -1,8 +1,9 @@
 from typing import Dict, List, NamedTuple, Optional, Set
 from collections import namedtuple, deque
 
-OrbitsOfObject: NamedTuple("OrbitsOfObject", [("direct", Optional[str]), (
-    "indirect", List[str])]) = namedtuple("OrbitsOfObject", ["direct", "indirect"])
+OrbitsOfObject: NamedTuple(
+    "OrbitsOfObject", [("direct", Optional[str]), ("indirect", List[str])]
+) = namedtuple("OrbitsOfObject", ["direct", "indirect"])
 
 sample_input_part_one = """COM)B
 B)C
@@ -33,14 +34,14 @@ def get_orbits_of_object(data: Dict[str, str], name: str):
 
 def test_get_orbits_of_object():
     data = parse_input_into_hash_table(sample_input_part_one.splitlines())
-    assert get_orbits_of_object(data, "COM") == OrbitsOfObject(
-        direct=None, indirect=[])
-    assert get_orbits_of_object(data, "B") == OrbitsOfObject(
-        direct="COM", indirect=[])
+    assert get_orbits_of_object(data, "COM") == OrbitsOfObject(direct=None, indirect=[])
+    assert get_orbits_of_object(data, "B") == OrbitsOfObject(direct="COM", indirect=[])
     assert get_orbits_of_object(data, "G") == OrbitsOfObject(
-        direct="B", indirect=["COM"])
+        direct="B", indirect=["COM"]
+    )
     assert get_orbits_of_object(data, "L") == OrbitsOfObject(
-        direct="K", indirect=["J", "E", "D", "C", "B", "COM"])
+        direct="K", indirect=["J", "E", "D", "C", "B", "COM"]
+    )
 
 
 def count_orbits(data: Dict[str, str]):
@@ -59,17 +60,17 @@ def test_count_orbits():
 
 
 def part_one():
-    with open('day_06_input.txt') as f:
+    with open("day_06_input.txt") as f:
         without_new_line_chars = [x.strip() for x in f]
         data = parse_input_into_hash_table(without_new_line_chars)
         return count_orbits(data)
 
-def test_part_one():
-    assert part_one() == 234446
+
+
 
 def parse_input_into_hash_table(raw_input: List[str]) -> Dict[str, str]:
     result = {}
-    separator = ')'
+    separator = ")"
     for line in raw_input:
         center, orbiter = line.split(separator)
         result[orbiter] = center
@@ -88,7 +89,7 @@ def test_get_orbiter_to_center_hash_table():
         "I": "D",
         "J": "E",
         "K": "J",
-        "L": "K"
+        "L": "K",
     }
 
 
@@ -97,7 +98,7 @@ Graph = Dict[str, Set[str]]
 
 def parse_input_into_graph(raw_input: List[str]) -> Graph:
     result: Graph = {}
-    separator = ')'
+    separator = ")"
     for line in raw_input:
         center, orbiter = line.split(separator)
         center_data = result[center] if center in result else set()
@@ -140,15 +141,13 @@ def test_parse_input_into_graph():
         "K": set(["J", "L", "YOU"]),
         "L": set(["K"]),
         "YOU": set(["K"]),
-        "SAN": set(["I"])
+        "SAN": set(["I"]),
     }
 
 
 def breadth_first_search_path(graph: Graph, start: str, target: str):
     # Single-ended queue: Add stuff on the right and remove on the left:
-    paths = deque([
-        (start, [start])
-    ])
+    paths = deque([(start, [start])])
     while paths:
         vertex, path = paths.popleft()
         next_vertices = graph[vertex] - set(path)
@@ -163,11 +162,18 @@ def breadth_first_search_path(graph: Graph, start: str, target: str):
 def test_breadth_search_first_path():
     graph = parse_input_into_graph(sample_input_part_two.splitlines())
     assert breadth_first_search_path(graph, "YOU", "SAN") == [
-        "YOU", "K", "J", "E", "D", "I", "SAN"]
+        "YOU",
+        "K",
+        "J",
+        "E",
+        "D",
+        "I",
+        "SAN",
+    ]
 
 
 def part_two():
-    with open('day_06_input.txt') as f:
+    with open("day_06_input.txt") as f:
         without_new_line_chars = [x.strip() for x in f]
         graph = parse_input_into_graph(without_new_line_chars)
         shortest_path = breadth_first_search_path(graph, "YOU", "SAN")
@@ -175,10 +181,11 @@ def part_two():
         # num edges = num nodes - 1:
         return len(shortest_path) - 3
 
+# Note: These tests are commented out because the input and expected output are
+# different for each Advent of Code participant. The tests as written below
+# pass given my input and the correct output (as judged by the AoC website).
+# def test_part_one():
+#     assert part_one() == 234446
 
-def test_part_two():
-    assert part_two() == 385
-
-
-if __name__ == "__main__":
-    pass
+# def test_part_two():
+#     assert part_two() == 385

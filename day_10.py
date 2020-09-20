@@ -55,44 +55,59 @@ def are_vector_cross_product_zero(a: Vector, b: Vector) -> bool:
 
 
 def test_are_vector_cross_product_zero():
-    assert are_vector_cross_product_zero(
-        Vector(x=1, y=2), Vector(x=2, y=4)) == True
-    assert are_vector_cross_product_zero(
-        Vector(x=1, y=2), Vector(x=1, y=3)) == False
+    assert are_vector_cross_product_zero(Vector(x=1, y=2), Vector(x=2, y=4)) == True
+    assert are_vector_cross_product_zero(Vector(x=1, y=2), Vector(x=1, y=3)) == False
 
 
 def dot_product(a: Vector, b: Vector) -> int:
     return a.x * b.x + a.y * b.y
 
 
-def is_line_of_slight_obstructed_by(start: Asteroid, end: Asteroid, obstruction: Asteroid) -> bool:
+def is_line_of_slight_obstructed_by(
+    start: Asteroid, end: Asteroid, obstruction: Asteroid
+) -> bool:
     if start.x == end.x and start.y == end.y:
         return False
     else:
         # This check is based on https://lucidar.me/en/mathematics/check-if-a-point-belongs-on-a-line-segment/
-        start_end_vector = Vector(
-            x=end.x - start.x, y=end.y - start.y)
+        start_end_vector = Vector(x=end.x - start.x, y=end.y - start.y)
         start_asteroid_vector = Vector(
-            x=obstruction.x - start.x, y=obstruction.y - start.y)
+            x=obstruction.x - start.x, y=obstruction.y - start.y
+        )
         cross_product_is_zero = are_vector_cross_product_zero(
-            start_end_vector, start_asteroid_vector)
+            start_end_vector, start_asteroid_vector
+        )
         dot_product_1 = dot_product(start_end_vector, start_asteroid_vector)
         dot_product_2 = dot_product(start_end_vector, start_end_vector)
-        return cross_product_is_zero and dot_product_2 > dot_product_1 and dot_product_1 > 0
+        return (
+            cross_product_is_zero
+            and dot_product_2 > dot_product_1
+            and dot_product_1 > 0
+        )
 
 
 def test_is_line_of_slight_obstructed_by():
-    assert is_line_of_slight_obstructed_by(
-        Asteroid(x=3, y=4), Asteroid(x=1, y=0), Asteroid(x=2, y=2)) == True
-    assert is_line_of_slight_obstructed_by(
-        Asteroid(x=3, y=4), Asteroid(x=1, y=0), Asteroid(x=3, y=2)) == False
+    assert (
+        is_line_of_slight_obstructed_by(
+            Asteroid(x=3, y=4), Asteroid(x=1, y=0), Asteroid(x=2, y=2)
+        )
+        == True
+    )
+    assert (
+        is_line_of_slight_obstructed_by(
+            Asteroid(x=3, y=4), Asteroid(x=1, y=0), Asteroid(x=3, y=2)
+        )
+        == False
+    )
 
 
 def get_line_of_sight_count(me: Asteroid, them: List[Asteroid]) -> int:
     count = 0
     for target_index, target in enumerate(them):
         for obstruction_index, obstruction in enumerate(them):
-            if obstruction_index != target_index and is_line_of_slight_obstructed_by(me, target, obstruction):
+            if obstruction_index != target_index and is_line_of_slight_obstructed_by(
+                me, target, obstruction
+            ):
                 break
         else:
             count += 1
@@ -101,32 +116,27 @@ def get_line_of_sight_count(me: Asteroid, them: List[Asteroid]) -> int:
 
 @pytest.mark.parametrize(
     "asteroid_index,expected_count",
-    [
-        (0, 7),
-        (1, 7),
-        (2, 6),
-        (3, 7),
-        (4, 7),
-        (5, 7),
-        (6, 5),
-        (7, 7),
-        (8, 8),
-        (9, 7)
-    ]
+    [(0, 7), (1, 7), (2, 6), (3, 7), (4, 7), (5, 7), (6, 5), (7, 7), (8, 8), (9, 7)],
 )
 def test_get_line_of_sight_count(asteroid_index, expected_count):
     asteroids = get_asteroid_from_text_lines(input_1)
-    assert get_line_of_sight_count(
-        asteroids[asteroid_index], asteroids[:asteroid_index] + asteroids[asteroid_index + 1:]) == expected_count
+    assert (
+        get_line_of_sight_count(
+            asteroids[asteroid_index],
+            asteroids[:asteroid_index] + asteroids[asteroid_index + 1 :],
+        )
+        == expected_count
+    )
 
 
 def find_best_asteroid(lines: List[str]):
     asteroids = get_asteroid_from_text_lines(lines)
-    max_line_of_sight_count = - float("inf")
+    max_line_of_sight_count = -float("inf")
     max_line_of_sight_asteroid = None
     for index, asteroid in enumerate(asteroids):
         count = get_line_of_sight_count(
-            asteroid, asteroids[:index] + asteroids[index + 1:])
+            asteroid, asteroids[:index] + asteroids[index + 1 :]
+        )
         if count > max_line_of_sight_count:
             max_line_of_sight_count = count
             max_line_of_sight_asteroid = asteroid
@@ -203,7 +213,7 @@ input_5 = """
         (input_3, (35, Asteroid(x=1, y=2))),
         (input_4, (41, Asteroid(x=6, y=3))),
         (input_5, (210, Asteroid(x=11, y=13))),
-    ]
+    ],
 )
 def test_find_best_asteroid(lines, expected):
     assert find_best_asteroid(lines) == expected
@@ -215,13 +225,10 @@ def part_one():
         return find_best_asteroid(lines)
 
 
-def test_part_one():
-    assert part_one() == (309, Asteroid(x=37, y=25))
-
-
 def get_vertical_reference_vector(origin: Point) -> Vector:
     """The vector origin -> return_value is the upward pointing unit vector in the coord system centered on origin."""
     return Vector(x=origin.x, y=origin.y - 1)
+
 
 # Adapted from https://stackoverflow.com/a/16544330/7075699
 def get_clockwise_angle_btw_vectors(v1: Vector, v2: Vector, origin: Point) -> float:
@@ -251,12 +258,11 @@ def get_clockwise_angle_from_vertical(v: Vector, origin: Point) -> float:
         (Point(x=0, y=0), Vector(-1, 1), 5 * pi / 4),
         (Point(x=0, y=0), Vector(-1, 0), 3 * pi / 2),
         (Point(x=0, y=0), Vector(-1, -1), 7 * pi / 4),
-
         # Same points as above but in shifted coord system:
         (Point(x=1, y=2), Vector(1, 1), 0),
         (Point(x=1, y=2), Vector(2, 1), pi / 4),
         (Point(x=1, y=2), Vector(2, 2), pi / 2),
-    ]
+    ],
 )
 def test_get_clockwise_angle_from_vertical(origin, vector, expected_angle):
     assert get_clockwise_angle_from_vertical(vector, origin) == expected_angle
@@ -272,23 +278,22 @@ input_6 = """
 
 
 def get_distance_from_origin(asteroid: Asteroid, origin: Point) -> float:
-    return math.sqrt(
-        (asteroid.x - origin.x) ** 2 +
-        (asteroid.y - origin.y) ** 2
-    )
+    return math.sqrt((asteroid.x - origin.x) ** 2 + (asteroid.y - origin.y) ** 2)
 
 
-def sort_by_vaporization_order(asteroids: List[Asteroid], origin: Point) -> List[Asteroid]:
+def sort_by_vaporization_order(
+    asteroids: List[Asteroid], origin: Point
+) -> List[Asteroid]:
     # Remove the asteroid at the origin from consideration:
     with_asteroid_at_origin_removed = [
-        a for a in asteroids if not (a.x == origin.x and a.y == origin.y)]
+        a for a in asteroids if not (a.x == origin.x and a.y == origin.y)
+    ]
 
     sorted_by_clock_angle = sorted(
         with_asteroid_at_origin_removed,
         key=lambda asteroid: get_clockwise_angle_from_vertical(
-            Vector(x=asteroid.x, y=asteroid.y),
-            origin
-        )
+            Vector(x=asteroid.x, y=asteroid.y), origin
+        ),
     )
 
     grouped_by_clock_angle: List[List[Asteroid]] = []
@@ -296,8 +301,11 @@ def sort_by_vaporization_order(asteroids: List[Asteroid], origin: Point) -> List
     current_group: List[Asteroid] = []
     for asteroid in sorted_by_clock_angle:
         current_clock_angle = get_clockwise_angle_from_vertical(
-            Vector(x=asteroid.x, y=asteroid.y), origin)
-        if last_asteroid_clock_angle is not None and not math.isclose(current_clock_angle, last_asteroid_clock_angle):
+            Vector(x=asteroid.x, y=asteroid.y), origin
+        )
+        if last_asteroid_clock_angle is not None and not math.isclose(
+            current_clock_angle, last_asteroid_clock_angle
+        ):
             grouped_by_clock_angle.append(current_group)
             current_group = []
         current_group.append(asteroid)
@@ -307,14 +315,19 @@ def sort_by_vaporization_order(asteroids: List[Asteroid], origin: Point) -> List
 
     sorted_by_clock_angle_and_distance: List[List[Asteroid]] = []
     for asteroids_at_same_line_of_sight in grouped_by_clock_angle:
-        sorted_asteroids = sorted(asteroids_at_same_line_of_sight,
-                                  key=lambda asteroid: get_distance_from_origin(asteroid, origin))
+        sorted_asteroids = sorted(
+            asteroids_at_same_line_of_sight,
+            key=lambda asteroid: get_distance_from_origin(asteroid, origin),
+        )
         sorted_by_clock_angle_and_distance.append(sorted_asteroids)
 
     vaporization_order: List[Asteroid] = []
-    for asteroids_in_same_vaporization_pass in itertools.zip_longest(*sorted_by_clock_angle_and_distance):
+    for asteroids_in_same_vaporization_pass in itertools.zip_longest(
+        *sorted_by_clock_angle_and_distance
+    ):
         vaporization_order.extend(
-            [x for x in asteroids_in_same_vaporization_pass if x is not None])
+            [x for x in asteroids_in_same_vaporization_pass if x is not None]
+        )
     return vaporization_order
 
 
@@ -367,8 +380,7 @@ def test_sort_by_vaporization_order_1():
 
 def test_sort_by_vaporization_order_2():
     asteroids = get_asteroid_from_text_lines(input_5)
-    vaporization_order = sort_by_vaporization_order(
-        asteroids, Point(x=11, y=13))
+    vaporization_order = sort_by_vaporization_order(asteroids, Point(x=11, y=13))
     assert vaporization_order[0] == Asteroid(x=11, y=12)
     assert vaporization_order[1] == Asteroid(x=12, y=1)
     assert vaporization_order[2] == Asteroid(x=12, y=2)
@@ -392,8 +404,13 @@ def part_two():
         return asteroid_200th.x * 100 + asteroid_200th.y
 
 
-def test_part_two():
-    assert part_two() == 416
+# Note: These tests are commented out because the input and expected output are
+# different for each Advent of Code participant. The tests as written below
+# pass given my input and the correct output (as judged by the AoC website).
+# def test_part_one():
+#     assert part_one() == (309, Asteroid(x=37, y=25))
+# def test_part_two():
+#     assert part_two() == 416
 
 
 if __name__ == "__main__":

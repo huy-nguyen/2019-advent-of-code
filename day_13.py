@@ -152,8 +152,11 @@ def part_one():
         return screen.get_num_block_tiles()
 
 
-def test_part_one():
-    assert part_one() == 200
+# Note: These tests are commented out because the input and expected output are
+# different for each Advent of Code participant. The tests as written below
+# pass given my input and the correct output (as judged by the AoC website).
+# def test_part_one():
+#     assert part_one() == 200
 
 
 def read_single_char_from_stdin(_):

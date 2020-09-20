@@ -128,11 +128,6 @@ def part_one():
         board = run_program(source_code, 0)
         return board.get_num_panels_painted_at_least_once()
 
-
-def test_part_one():
-    assert part_one() == 1951
-
-
 def part_two():
     with open("day_11_input.txt") as f:
         source_code = f.readline()
@@ -141,6 +136,11 @@ def part_two():
         for line in buffer:
             print(line)
 
+# Note: These tests are commented out because the input and expected output are
+# different for each Advent of Code participant. The tests as written below
+# pass given my input and the correct output (as judged by the AoC website).
+# def test_part_one():
+#     assert part_one() == 1951
 
 if __name__ == "__main__":
     part_two()

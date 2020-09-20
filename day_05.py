@@ -172,9 +172,6 @@ def shift_if_in_relative_mode(value: int, relative_base: int, mode: Mode) -> int
 
 
 def compile_source_code(source_code: str):
-    """Last two arguments are used for mocking in tests and also for use in day 7.
-    get_user_input is an awaitable.
-    """
     buffer = Buffer([int(x) for x in source_code.split(',')])
     index = 0
     should_continue = True
@@ -352,30 +349,28 @@ def execute_day_05_input(get_user_input=input, print_output=print):
         run_with_input_output(source_code, get_user_input, print_output)
 
 
-def test_part_one():
-    get_user_input = Mock(return_value="1")
-    print_output = Mock()
-    execute_day_05_input(get_user_input, print_output)
-    assert print_output.call_args_list == [
-        call(0),
-        call(0),
-        call(0),
-        call(0),
-        call(0),
-        call(0),
-        call(0),
-        call(0),
-        call(0),
-        call(4601506),
-    ]
+# Note: These tests are commented out because the input and expected output are
+# different for each Advent of Code participant. The tests as written below
+# pass given my input and the correct output (as judged by the AoC website).
+# def test_part_one():
+#     get_user_input = Mock(return_value="1")
+#     print_output = Mock()
+#     execute_day_05_input(get_user_input, print_output)
+#     assert print_output.call_args_list == [
+#         call(0),
+#         call(0),
+#         call(0),
+#         call(0),
+#         call(0),
+#         call(0),
+#         call(0),
+#         call(0),
+#         call(0),
+#         call(4601506),
+#     ]
 
-
-def test_part_two():
-    get_user_input = Mock(return_value="5")
-    print_output = Mock()
-    execute_day_05_input(get_user_input, print_output)
-    print_output.assert_called_once_with(5525561)
-
-
-if __name__ == "__main__":
-    pass
+# def test_part_two():
+#     get_user_input = Mock(return_value="5")
+#     print_output = Mock()
+#     execute_day_05_input(get_user_input, print_output)
+#     print_output.assert_called_once_with(5525561)

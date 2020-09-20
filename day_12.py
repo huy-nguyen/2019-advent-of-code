@@ -29,86 +29,150 @@ class Moon:
 
 
 def apply_gravity_two_moons(a: Moon, b: Moon):
-    for (a_position_component, b_position_component, (component_name, prev_a_velocity_component), prev_b_velocity_component) in zip(
+    for (
+        a_position_component,
+        b_position_component,
+        (component_name, prev_a_velocity_component),
+        prev_b_velocity_component,
+    ) in zip(
         astuple(a.position),
         astuple(b.position),
         asdict(a.velocity).items(),
-        asdict(b.velocity).values()
+        asdict(b.velocity).values(),
     ):
         if a_position_component != b_position_component:
             if a_position_component * b_position_component < 0:
                 # This means a and b are on opposite sides of the origin:
-                positive_moon, negative_moon, positive_moon_velocity_component, negative_moon_velocity_component = (
-                    a, b, prev_a_velocity_component, prev_b_velocity_component
-                ) if a_position_component > 0 else (
-                    b, a, prev_b_velocity_component, prev_a_velocity_component
+                (
+                    positive_moon,
+                    negative_moon,
+                    positive_moon_velocity_component,
+                    negative_moon_velocity_component,
+                ) = (
+                    (a, b, prev_a_velocity_component, prev_b_velocity_component)
+                    if a_position_component > 0
+                    else (b, a, prev_b_velocity_component, prev_a_velocity_component)
                 )
                 positive_moon.velocity = replace(
-                    positive_moon.velocity, **{component_name: positive_moon_velocity_component - 1})
+                    positive_moon.velocity,
+                    **{component_name: positive_moon_velocity_component - 1}
+                )
                 negative_moon.velocity = replace(
-                    negative_moon.velocity, **{component_name: negative_moon_velocity_component + 1})
+                    negative_moon.velocity,
+                    **{component_name: negative_moon_velocity_component + 1}
+                )
             elif a_position_component * b_position_component > 0:
                 # This means a and b are on the same side of the origin:
-                further_moon, closer_moon, further_moon_velocity_component, closer_moon_velocity_component = (
-                    a, b, prev_a_velocity_component, prev_b_velocity_component,
-                ) if abs(a_position_component) > abs(b_position_component) else (
-                    b, a, prev_b_velocity_component, prev_a_velocity_component,
+                (
+                    further_moon,
+                    closer_moon,
+                    further_moon_velocity_component,
+                    closer_moon_velocity_component,
+                ) = (
+                    (
+                        a,
+                        b,
+                        prev_a_velocity_component,
+                        prev_b_velocity_component,
+                    )
+                    if abs(a_position_component) > abs(b_position_component)
+                    else (
+                        b,
+                        a,
+                        prev_b_velocity_component,
+                        prev_a_velocity_component,
+                    )
                 )
                 # This is the change in velocity to bring the further-away moon closer to the origin:
                 velocity_change_further_moon = 1 if a_position_component < 0 else -1
 
-                further_moon.velocity = replace(further_moon.velocity, **{
-                                                component_name: further_moon_velocity_component + velocity_change_further_moon})
-                closer_moon.velocity = replace(closer_moon.velocity, **{
-                                               component_name: closer_moon_velocity_component - velocity_change_further_moon})
+                further_moon.velocity = replace(
+                    further_moon.velocity,
+                    **{
+                        component_name: further_moon_velocity_component
+                        + velocity_change_further_moon
+                    }
+                )
+                closer_moon.velocity = replace(
+                    closer_moon.velocity,
+                    **{
+                        component_name: closer_moon_velocity_component
+                        - velocity_change_further_moon
+                    }
+                )
             else:
                 # This means either a or b is on the origin:
-                zero_moon, non_zero_moon, zero_moon_velocity_component, non_zero_moon_velocity_component, non_zero_moon_position_component = (
-                    a, b, prev_a_velocity_component, prev_b_velocity_component, b_position_component,
-                ) if a_position_component == 0 else (
-                    b, a, prev_b_velocity_component, prev_a_velocity_component, a_position_component
+                (
+                    zero_moon,
+                    non_zero_moon,
+                    zero_moon_velocity_component,
+                    non_zero_moon_velocity_component,
+                    non_zero_moon_position_component,
+                ) = (
+                    (
+                        a,
+                        b,
+                        prev_a_velocity_component,
+                        prev_b_velocity_component,
+                        b_position_component,
+                    )
+                    if a_position_component == 0
+                    else (
+                        b,
+                        a,
+                        prev_b_velocity_component,
+                        prev_a_velocity_component,
+                        a_position_component,
+                    )
                 )
-                velocity_change_non_zero_moon = 1 if non_zero_moon_position_component < 0 else -1
-                non_zero_moon.velocity = replace(non_zero_moon.velocity, **{
-                                                 component_name: non_zero_moon_velocity_component + velocity_change_non_zero_moon})
+                velocity_change_non_zero_moon = (
+                    1 if non_zero_moon_position_component < 0 else -1
+                )
+                non_zero_moon.velocity = replace(
+                    non_zero_moon.velocity,
+                    **{
+                        component_name: non_zero_moon_velocity_component
+                        + velocity_change_non_zero_moon
+                    }
+                )
                 zero_moon.velocity = replace(
-                    zero_moon.velocity, **{component_name: zero_moon_velocity_component - velocity_change_non_zero_moon})
+                    zero_moon.velocity,
+                    **{
+                        component_name: zero_moon_velocity_component
+                        - velocity_change_non_zero_moon
+                    }
+                )
 
 
 def test_apply_gravity_two_moons():
     a = Moon(name="A", position=Position(x=-1, y=0, z=2), velocity=Velocity())
-    b = Moon(name="B", position=Position(
-        x=2, y=-10, z=-7), velocity=Velocity())
+    b = Moon(name="B", position=Position(x=2, y=-10, z=-7), velocity=Velocity())
     apply_gravity_two_moons(a, b)
     assert a == Moon(
-        name="A", position=Position(x=-1, y=0, z=2),
-        velocity=Velocity(x=1, y=-1, z=-1)
+        name="A", position=Position(x=-1, y=0, z=2), velocity=Velocity(x=1, y=-1, z=-1)
     )
     assert b == Moon(
-        name="B", position=Position(x=2, y=-10, z=-7),
-        velocity=Velocity(x=-1, y=1, z=1)
+        name="B", position=Position(x=2, y=-10, z=-7), velocity=Velocity(x=-1, y=1, z=1)
     )
 
 
 def move_moon_according_to_velocity(moon: Moon):
     for velocity_component, (component_name, position_component) in zip(
-        astuple(moon.velocity),
-        asdict(moon.position).items()
+        astuple(moon.velocity), asdict(moon.position).items()
     ):
         new_position_component = position_component + velocity_component
         moon.position = replace(
-            moon.position, **{component_name: new_position_component})
+            moon.position, **{component_name: new_position_component}
+        )
 
 
 def test_move_moon_according_to_velocity():
     a = Moon(
-        name="A", position=Position(x=-1, y=0, z=2),
-        velocity=Velocity(x=1, y=-1, z=-1)
+        name="A", position=Position(x=-1, y=0, z=2), velocity=Velocity(x=1, y=-1, z=-1)
     )
     move_moon_according_to_velocity(a)
     assert a == Moon(
-        name="A", position=Position(x=0, y=-1, z=1),
-        velocity=Velocity(x=1, y=-1, z=-1)
+        name="A", position=Position(x=0, y=-1, z=1), velocity=Velocity(x=1, y=-1, z=-1)
     )
 
 
@@ -124,56 +188,39 @@ def perform_one_pass(moons: List[Moon]):
 
 def test_perform_one_pass_1():
     a = Moon(name="A", position=Position(x=-1, y=0, z=2), velocity=Velocity())
-    b = Moon(name="B", position=Position(
-        x=2, y=-10, z=-7), velocity=Velocity())
+    b = Moon(name="B", position=Position(x=2, y=-10, z=-7), velocity=Velocity())
     c = Moon(name="C", position=Position(x=4, y=-8, z=8), velocity=Velocity())
     d = Moon(name="D", position=Position(x=3, y=5, z=-1), velocity=Velocity())
     moons = [a, b, c, d]
 
     perform_one_pass(moons)
     assert a == Moon(
-        name="A",
-        position=Position(x=2, y=-1, z=1),
-        velocity=Velocity(x=3, y=-1, z=-1)
+        name="A", position=Position(x=2, y=-1, z=1), velocity=Velocity(x=3, y=-1, z=-1)
     )
     assert b == Moon(
-        name="B",
-        position=Position(x=3, y=-7, z=-4),
-        velocity=Velocity(x=1, y=3, z=3)
+        name="B", position=Position(x=3, y=-7, z=-4), velocity=Velocity(x=1, y=3, z=3)
     )
     assert c == Moon(
-        name="C",
-        position=Position(x=1, y=-7, z=5),
-        velocity=Velocity(x=-3, y=1, z=-3)
+        name="C", position=Position(x=1, y=-7, z=5), velocity=Velocity(x=-3, y=1, z=-3)
     )
     assert d == Moon(
-        name="D",
-        position=Position(x=2, y=2, z=0),
-        velocity=Velocity(x=-1, y=-3, z=1)
+        name="D", position=Position(x=2, y=2, z=0), velocity=Velocity(x=-1, y=-3, z=1)
     )
 
     for _ in range(9):
         perform_one_pass(moons)
 
     assert a == Moon(
-        name="A",
-        position=Position(x=2, y=1, z=-3),
-        velocity=Velocity(x=-3, y=-2, z=1)
+        name="A", position=Position(x=2, y=1, z=-3), velocity=Velocity(x=-3, y=-2, z=1)
     )
     assert b == Moon(
-        name="B",
-        position=Position(x=1, y=-8, z=0),
-        velocity=Velocity(x=-1, y=1, z=3)
+        name="B", position=Position(x=1, y=-8, z=0), velocity=Velocity(x=-1, y=1, z=3)
     )
     assert c == Moon(
-        name="C",
-        position=Position(x=3, y=-6, z=1),
-        velocity=Velocity(x=3, y=2, z=-3)
+        name="C", position=Position(x=3, y=-6, z=1), velocity=Velocity(x=3, y=2, z=-3)
     )
     assert d == Moon(
-        name="D",
-        position=Position(x=2, y=0, z=4),
-        velocity=Velocity(x=1, y=-1, z=-1)
+        name="D", position=Position(x=2, y=0, z=4), velocity=Velocity(x=1, y=-1, z=-1)
     )
 
 
@@ -191,24 +238,16 @@ def get_total_energy_system(moons: List[Moon]) -> int:
 
 def test_energy():
     a = Moon(
-        name="A",
-        position=Position(x=2, y=1, z=-3),
-        velocity=Velocity(x=-3, y=-2, z=1)
+        name="A", position=Position(x=2, y=1, z=-3), velocity=Velocity(x=-3, y=-2, z=1)
     )
     b = Moon(
-        name="B",
-        position=Position(x=1, y=-8, z=0),
-        velocity=Velocity(x=-1, y=1, z=3)
+        name="B", position=Position(x=1, y=-8, z=0), velocity=Velocity(x=-1, y=1, z=3)
     )
     c = Moon(
-        name="C",
-        position=Position(x=3, y=-6, z=1),
-        velocity=Velocity(x=3, y=2, z=-3)
+        name="C", position=Position(x=3, y=-6, z=1), velocity=Velocity(x=3, y=2, z=-3)
     )
     d = Moon(
-        name="D",
-        position=Position(x=2, y=0, z=4),
-        velocity=Velocity(x=1, y=-1, z=-1)
+        name="D", position=Position(x=2, y=0, z=4), velocity=Velocity(x=1, y=-1, z=-1)
     )
     assert get_total_energy(a) == 36
     assert get_total_energy(b) == 45
@@ -218,8 +257,7 @@ def test_energy():
 
 
 def test_perform_one_pass_2():
-    a = Moon(name="A", position=Position(
-        x=-8, y=-10, z=0), velocity=Velocity())
+    a = Moon(name="A", position=Position(x=-8, y=-10, z=0), velocity=Velocity())
     b = Moon(name="B", position=Position(x=5, y=5, z=10), velocity=Velocity())
     c = Moon(name="C", position=Position(x=2, y=-7, z=3), velocity=Velocity())
     d = Moon(name="D", position=Position(x=9, y=-8, z=-3), velocity=Velocity())
@@ -229,50 +267,30 @@ def test_perform_one_pass_2():
         perform_one_pass(moons)
 
     assert a == Moon(
-        name="A",
-        position=Position(x=8, y=-12, z=-9),
-        velocity=Velocity(x=-7, y=3, z=0)
+        name="A", position=Position(x=8, y=-12, z=-9), velocity=Velocity(x=-7, y=3, z=0)
     )
     assert b == Moon(
         name="B",
         position=Position(x=13, y=16, z=-3),
-        velocity=Velocity(x=3, y=-11, z=-5)
+        velocity=Velocity(x=3, y=-11, z=-5),
     )
     assert c == Moon(
         name="C",
         position=Position(x=-29, y=-11, z=-1),
-        velocity=Velocity(x=-3, y=7, z=4)
+        velocity=Velocity(x=-3, y=7, z=4),
     )
     assert d == Moon(
-        name="D",
-        position=Position(x=16, y=-13, z=23),
-        velocity=Velocity(x=7, y=1, z=1)
+        name="D", position=Position(x=16, y=-13, z=23), velocity=Velocity(x=7, y=1, z=1)
     )
     assert get_total_energy_system(moons) == 1940
 
 
 def get_day_12_input():
     return [
-        Moon(
-            name="A",
-            position=Position(x=16, y=-11, z=2),
-            velocity=Velocity()
-        ),
-        Moon(
-            name="B",
-            position=Position(x=0, y=-4, z=7),
-            velocity=Velocity()
-        ),
-        Moon(
-            name="C",
-            position=Position(x=6, y=4, z=-10),
-            velocity=Velocity()
-        ),
-        Moon(
-            name="D",
-            position=Position(x=-3, y=-2, z=-4),
-            velocity=Velocity()
-        ),
+        Moon(name="A", position=Position(x=16, y=-11, z=2), velocity=Velocity()),
+        Moon(name="B", position=Position(x=0, y=-4, z=7), velocity=Velocity()),
+        Moon(name="C", position=Position(x=6, y=4, z=-10), velocity=Velocity()),
+        Moon(name="D", position=Position(x=-3, y=-2, z=-4), velocity=Velocity()),
     ]
 
 
@@ -285,11 +303,9 @@ def part_one():
 
 
 def lcm(denominators):
-    return reduce(lambda a, b: a*b // gcd(a, b), denominators)
+    return reduce(lambda a, b: a * b // gcd(a, b), denominators)
 
 
-def test_part_one():
-    assert part_one() == 10055
 
 
 def shallow_copy_moons(moons: List[Moon]) -> List[Moon]:
@@ -334,22 +350,41 @@ def get_cycle_period(moons):
 
 
 def test_get_cycle_period():
-    assert get_cycle_period([
-        Moon(name="A", position=Position(x=-1, y=0, z=2), velocity=Velocity()),
-        Moon(name="B", position=Position(x=2, y=-10, z=-7), velocity=Velocity()),
-        Moon(name="C", position=Position(x=4, y=-8, z=8), velocity=Velocity()),
-        Moon(name="D", position=Position(x=3, y=5, z=-1), velocity=Velocity()),
-    ]) == 2772
-    assert get_cycle_period([
-        Moon(name="A", position=Position(x=-8, y=-10, z=0), velocity=Velocity()),
-        Moon(name="B", position=Position(x=5, y=5, z=10), velocity=Velocity()),
-        Moon(name="C", position=Position(x=2, y=-7, z=3), velocity=Velocity()),
-        Moon(name="D", position=Position(x=9, y=-8, z=-3), velocity=Velocity()),
-    ]) == 4686774924
+    assert (
+        get_cycle_period(
+            [
+                Moon(name="A", position=Position(x=-1, y=0, z=2), velocity=Velocity()),
+                Moon(
+                    name="B", position=Position(x=2, y=-10, z=-7), velocity=Velocity()
+                ),
+                Moon(name="C", position=Position(x=4, y=-8, z=8), velocity=Velocity()),
+                Moon(name="D", position=Position(x=3, y=5, z=-1), velocity=Velocity()),
+            ]
+        )
+        == 2772
+    )
+    assert (
+        get_cycle_period(
+            [
+                Moon(
+                    name="A", position=Position(x=-8, y=-10, z=0), velocity=Velocity()
+                ),
+                Moon(name="B", position=Position(x=5, y=5, z=10), velocity=Velocity()),
+                Moon(name="C", position=Position(x=2, y=-7, z=3), velocity=Velocity()),
+                Moon(name="D", position=Position(x=9, y=-8, z=-3), velocity=Velocity()),
+            ]
+        )
+        == 4686774924
+    )
 
 
-def test_part_two():
-    assert get_cycle_period(get_day_12_input()) == 374307970285176
+# Note: These tests are commented out because the input and expected output are
+# different for each Advent of Code participant. The tests as written below
+# pass given my input and the correct output (as judged by the AoC website).
+# def test_part_one():
+#     assert part_one() == 10055
+# def test_part_two():
+#     assert get_cycle_period(get_day_12_input()) == 374307970285176
 
 
 if __name__ == "__main__":
